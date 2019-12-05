@@ -21,6 +21,10 @@ public class SearchEngine {
     /** Porter Stemmer used for stemming tokens. **/
     private static Stemmer stemmer = new Stemmer();
 
+    /** NLTK's list of 128 stop words. **/
+    private static HashSet<String> stopWords = new HashSet<String>(Arrays.asList("i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
+    ));
+
     /** Inverted index for posting list.
      * Key is a term and it is mapped to a linked list of documents.
      * Value is a linked hash list where each entry is a pair (document, frequency);
@@ -36,60 +40,80 @@ public class SearchEngine {
         byte[] byteBuffer = new byte[10000];
         int currentWordStart = 0;
 
-        /* Gets a reference to the file, READ_ONLY */
-        //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
-        //Change that to your own when you pull.
-        RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/dev-set/1.xml", "r");
-        FileChannel inChannel = aFile.getChannel();
-        MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-        buffer.load();
+        /*
+        TODO:
+        I have tried it only for dev set so far and evaluation set, which is way larger.
+        It seemed to work okay for dev set...
+         */
 
-        /* Have two buffers, retrieve string and save bytes */
+        for(int xmlId = 1; xmlId <= 30; xmlId++) {
+
+            /* Gets a reference to the file, READ_ONLY */
+            //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
+            //Change that to your own when you pull.
+            RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/dev-set/"
+                                                                    + Integer.toString(xmlId) + ".xml", "r");
+            FileChannel inChannel = aFile.getChannel();
+            MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+            buffer.load();
+
+            /* Have two buffers, retrieve string and save bytes */
 		/*
 		 * Splits articles Tokenize each, add number count Add Doc ID
 
-/*Gets an article from parsed xml,
- * Convert byte sequence into a linear seq of chars
- * Each article is our Doc
- * Tokenize it by splitting text by white spaces,  throw away punctuation
- * Delete stop words (use a stop list)
- * Normalize words, remove accents, lower case
- * Index the documents each word appears in
- * */
+        /*Gets an article from parsed xml,
+         * Convert byte sequence into a linear seq of chars
+         * Each article is our Doc
+         * Tokenize it by splitting text by white spaces,  throw away punctuation
+         * Delete stop words (use a stop list)
+         * Normalize words, remove accents, lower case
+         * Index the documents each word appears in
+         * */
 
-        int size = 0;
-        for (int i = 0; i < buffer.limit(); i++) {
-            byte b = buffer.get();
+            int size = 0;
+            for (int i = 0; i < buffer.limit(); i++) {
+                byte b = buffer.get();
 
-            // New word found
-            if (b == 32 || b == 10) {
-                if (currentWordStart < i) {
+                // New word found
+                if (b == 32 || b == 10) {
+                    if (currentWordStart < i) {
 
-                    String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
-                    //System.out.printf("%s ", s);
-                    size = 0;
-                    Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
+                        String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
+                        //System.out.printf("%s ", s);
+                        size = 0;
+                        Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
 
-                    wordProcessor(s);
-                    if(s.startsWith("<bdy>")){
-                        Document last = documents.get(documents.size()-1);
-                        last.setStartByte(i);
-                    } else if(s.endsWith("</bdy>")) {
-                        Document last = documents.get(documents.size() - 1);
-                        //subtract the length of the string "</bdy>" because it's not part of text
-                        last.setEndByte(i - size);
+                        wordProcessor(s);
+                        if (s.startsWith("<bdy>")) {
+                            Document last = documents.get(documents.size() - 1);
+                            last.setStartByte(i);
+                        } else if (s.endsWith("</bdy>")) {
+                            Document last = documents.get(documents.size() - 1);
+                            //subtract the length of the string "</bdy>" because it's not part of text
+                            last.setEndByte(i - size);
+                        }
                     }
+                } else {
+                    byteBuffer[size++] = b;
                 }
             }
+            buffer.clear(); // do something with the data and clear/compact it.
+            inChannel.close();
+            aFile.close();
 
-            else {
-                byteBuffer[size++] = b;
+            for(Document doc : documents){
+                if(doc.getXmlNumber() == 0){
+                    doc.setXmlNumber(xmlId);
+                }
+                doc.setDevSet(true);
             }
         }
-        buffer.clear(); // do something with the data and clear/compact it.
-        inChannel.close();
-        aFile.close();
 
+        /*
+        If you want to see how does the posting list look at the end:
+        put a breakpoint at one of these lines (red dot to the left) and then run in debug mode.
+        Then open static variables and expand the postingList. :))
+         */
         System.out.println();
         System.out.println();
         System.out.println();
@@ -102,8 +126,6 @@ public class SearchEngine {
         TODO:
         Check if it's a stop word.
         */
-
-        if(word.isEmpty()) return;
 
         if(word.contains("<bdy")) {
             isBody = true;
@@ -137,8 +159,13 @@ public class SearchEngine {
         else if(word.endsWith("</article>")) {
         }
 
+        //Check if word is a stop word or empty.
         else if(isBody) {
             word = normalize(word);
+
+            if(word.isEmpty()) return;
+            if(stopWords.contains(word)) return;
+
             addToIndex(word);
         }
 

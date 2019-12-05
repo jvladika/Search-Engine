@@ -7,6 +7,10 @@ public class Document {
     private int startByte;
     private int endByte;
 
+    private int xmlNumber;
+    private boolean isDevSet;
+
+
     public Document(){
     }
 
@@ -45,5 +49,21 @@ public class Document {
 
     public void setEndByte(int endByte) {
         this.endByte = endByte;
+    }
+
+    public int getXmlNumber() {
+        return xmlNumber;
+    }
+
+    public void setXmlNumber(int xmlNumber) {
+        this.xmlNumber = xmlNumber;
+    }
+
+    public boolean isDevSet() {
+        return isDevSet;
+    }
+
+    public void setDevSet(boolean devSet) {
+        isDevSet = devSet;
     }
 }
