@@ -1,7 +1,6 @@
 package at.tuw.iir;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -19,10 +18,10 @@ public class SearchEngine {
     private static int currId = 0;
 
     /** Porter Stemmer used for stemming tokens. **/
-    private static Stemmer stemmer = new Stemmer();
+    public static Stemmer stemmer = new Stemmer();
 
     /** NLTK's list of 128 stop words. **/
-    private static HashSet<String> stopWords = new HashSet<String>(Arrays.asList("i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
+    public static HashSet<String> stopWords = new HashSet<String>(Arrays.asList("i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
     ));
 
     /** Inverted index for posting list.
@@ -30,12 +29,97 @@ public class SearchEngine {
      * Value is a linked hash list where each entry is a pair (document, frequency);
      * i.e. each entry says in which document and how many times the term appears.
      * **/
-    private static Map<String, LinkedHashMap<Long, Integer>> postingList = new HashMap<>();
+    public static Map<String, LinkedHashMap<Long, Integer>> postingList = new HashMap<>();
 
-    private static List<Document> documents = new ArrayList<>();
+    public static List<Document> documents = new ArrayList<>();
 
 
     public static void main(String[] args) throws IOException {
+        run();
+    }
+
+    private static void run() throws IOException {
+        Scanner sc = new Scanner(System.in);
+
+        while(true){
+            System.out.print("Write your query: ");
+            while(!sc.hasNext()){
+            }
+            String line = sc.nextLine();
+            processQuery(line);
+        }
+
+    }
+
+    private static void processQuery(String line) throws IOException {
+        String[] args = line.split(" ");
+        Set<String> query = new HashSet<>(Arrays.asList(args));
+        System.out.println(query);
+        Set<String> stemmedQuery = new HashSet<>();
+
+        for(String term : query){
+            stemmedQuery.add(normalize(term));
+        }
+
+        Map<Document, Double> scores = new HashMap<>();
+        for(Document doc : documents){
+            double score = Scoring.scoreBM25(doc, stemmedQuery);
+            scores.put(doc, score);
+        }
+
+        scores = sortByValue(scores);
+        int it = 0;
+        for(Map.Entry<Document, Double> entry : scores.entrySet()){
+            if(it == 10) break;
+
+            Document doc = entry.getKey();
+            System.out.println(doc.getId() + " " + doc.getTitle());
+            printDoc(doc);
+
+            it++;
+        }
+    }
+
+    private static void printDoc(Document doc) throws IOException {
+        int xml = doc.getXmlNumber();
+        int start = doc.getStartByte();
+        int end = doc.getEndByte();
+
+        RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+                + Integer.toString(xml) + ".xml", "r");
+        FileChannel inChannel = aFile.getChannel();
+        MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+        buffer.load();
+
+        byte[] bytes = new byte[600];
+
+        for(int j = 0; j < doc.getStartByte(); j++){
+            buffer.get();
+        }
+
+        int size = 0;
+        for (int i = 0; i < 599; i++) {
+            byte b = buffer.get();
+            bytes[i] = b;
+        }
+
+        String s = new String(bytes, StandardCharsets.UTF_8);
+        System.out.println(s);
+    }
+
+    public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+        List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+
+        return result;
+    }
+
+    private static void indexData() throws IOException{
         char[] wordBuffer = new char[100];
         byte[] byteBuffer = new byte[10000];
         int currentWordStart = 0;
@@ -46,19 +130,28 @@ public class SearchEngine {
         It seemed to work okay for dev set...
          */
 
-        for(int xmlId = 1; xmlId <= 30; xmlId++) {
+        int iteration = 0;
+        OuterWhile: while(true) {
+            postingList = new HashMap<>();
 
-            System.out.println(xmlId);
-            /* Gets a reference to the file, READ_ONLY */
-            //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
-            //Change that to your own when you pull.
-            RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/dev-set/"
-                                                                    + Integer.toString(xmlId) + ".xml", "r");
-            FileChannel inChannel = aFile.getChannel();
-            MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-            buffer.load();
+            for (int xmlId = iteration * 100 + 1; xmlId <= (iteration + 1) * 100; xmlId++) {
 
-            /* Have two buffers, retrieve string and save bytes */
+
+                if (xmlId == 554) {
+                    break OuterWhile;
+                }
+                System.out.println(xmlId);
+
+                /* Gets a reference to the file, READ_ONLY */
+                //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
+                //Change that to your own when you pull.
+                RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+                        + Integer.toString(xmlId) + ".xml", "r");
+                FileChannel inChannel = aFile.getChannel();
+                MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+                buffer.load();
+
+                /* Have two buffers, retrieve string and save bytes */
 		/*
 		 * Splits articles Tokenize each, add number count Add Doc ID
 
@@ -71,44 +164,56 @@ public class SearchEngine {
          * Index the documents each word appears in
          * */
 
-            int size = 0;
-            for (int i = 0; i < buffer.limit(); i++) {
-                byte b = buffer.get();
+                int size = 0;
+                for (int i = 0; i < buffer.limit(); i++) {
+                    byte b = buffer.get();
 
-                // New word found
-                if (b == 32 || b == 10) {
-                    if (currentWordStart < i) {
+                    // New word found
+                    if (b == 32 || b == 10) {
+                        if (currentWordStart < i) {
 
-                        String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
-                        //System.out.printf("%s ", s);
-                        size = 0;
-                        Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
+                            //increment count of words;
+                            Document last1 = documents.get(documents.size() - 1);
+                            last1.setNumWords(last1.getNumWords()+1);
 
-                        wordProcessor(s);
-                        if (s.startsWith("<bdy>")) {
-                            Document last = documents.get(documents.size() - 1);
-                            last.setStartByte(i);
-                        } else if (s.endsWith("</bdy>")) {
-                            Document last = documents.get(documents.size() - 1);
-                            //subtract the length of the string "</bdy>" because it's not part of text
-                            last.setEndByte(i - size);
+                            String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
+                            //System.out.printf("%s ", s);
+                            size = 0;
+                            Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
+
+                            //wordProcessor(s);
+                            if (s.startsWith("<bdy>")) {
+                                Document last = documents.get(documents.size() - 1);
+                                last.setStartByte(i);
+                            } else if (s.endsWith("</bdy>")) {
+                                Document last = documents.get(documents.size() - 1);
+                                //subtract the length of the string "</bdy>" because it's not part of text
+                                last.setEndByte(i - size);
+                            }
                         }
+                    } else {
+                        byteBuffer[size++] = b;
                     }
-                } else {
-                    byteBuffer[size++] = b;
                 }
-            }
-            buffer.clear(); // do something with the data and clear/compact it.
-            inChannel.close();
-            aFile.close();
+                buffer.clear(); // do something with the data and clear/compact it.
+                inChannel.close();
+                aFile.close();
 
-            for(Document doc : documents){
-                if(doc.getXmlNumber() == 0){
-                    doc.setXmlNumber(xmlId);
+                for (Document doc : documents) {
+                    if (doc.getXmlNumber() == 0) {
+                        doc.setXmlNumber(xmlId);
+                    }
+                    doc.setDevSet(true);
                 }
-                doc.setDevSet(true);
+
             }
+
+            serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
+
+            iteration++;
         }
+
+        serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
 
         /*
         If you want to see how does the posting list look at the end:
@@ -120,6 +225,19 @@ public class SearchEngine {
         System.out.println();
     }
 
+    private static void serialize(String fileName){
+        try {
+            FileOutputStream fos =
+                    new FileOutputStream(fileName);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(postingList);
+            oos.close();
+            fos.close();
+            System.out.println("Serialized HashMap data is saved in postinglist.ser");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
 
     private static void wordProcessor(String word) {
 
@@ -204,20 +322,25 @@ public class SearchEngine {
      * Adds a stemmed word to inverted index / frequency dictionary / posting list.
      * **/
     private static void addToIndex(String word) {
-        LinkedHashMap<Long, Integer> value;
-        if(postingList.get(word) == null){
+        LinkedHashMap<Long, Integer> value = postingList.get(word);
+
+        if(value == null){
             value = new LinkedHashMap<>();
             value.put(documents.get(documents.size()-1).getId(), 1);
             postingList.put(word, value);
         } else{
             long id = documents.get(documents.size()-1).getId();
-            value = postingList.get(word);
             if(value.get(id) == null){
                 value.put(id, 1);
             } else{
                 value.put(id, value.get(id)+1);
             }
+
         }
+    }
+
+    public static double avgDl() {
+        return 0;
     }
 
 
