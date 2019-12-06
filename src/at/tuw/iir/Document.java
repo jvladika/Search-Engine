@@ -10,12 +10,14 @@ public class Document {
     private int xmlNumber;
     private boolean isDevSet;
 
+    private int numWords;
 
     public Document(){
     }
 
     public Document(long id) {
         this.id = id;
+        numWords = 0;
     }
 
 
@@ -65,5 +67,13 @@ public class Document {
 
     public void setDevSet(boolean devSet) {
         isDevSet = devSet;
+    }
+
+    public int getNumWords() {
+        return numWords;
+    }
+
+    public void setNumWords(int numWords) {
+        this.numWords = numWords;
     }
 }
