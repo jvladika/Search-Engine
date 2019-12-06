@@ -1,14 +1,13 @@
 package at.tuw.iir;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class SearchEngine {
-
+public class Query
+{
     /** Tells if body of a document is currently being read. **/
     private static boolean isBody;
 
@@ -46,18 +45,17 @@ public class SearchEngine {
         It seemed to work okay for dev set...
          */
 
-        for(int xmlId = 1; xmlId <= 30; xmlId++) {
+        for(int xmlId = 115; xmlId <= 250; xmlId++) {
 
-            System.out.println(xmlId);
             /* Gets a reference to the file, READ_ONLY */
             //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
             //Change that to your own when you pull.
-            RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/dev-set/"
-                                                                    + Integer.toString(xmlId) + ".xml", "r");
+            RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
+                    + Integer.toString(xmlId) + ".xml", "r");
             FileChannel inChannel = aFile.getChannel();
             MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
             buffer.load();
-
+                System.out.println(xmlId);
             /* Have two buffers, retrieve string and save bytes */
 		/*
 		 * Splits articles Tokenize each, add number count Add Doc ID
@@ -118,6 +116,20 @@ public class SearchEngine {
         System.out.println();
         System.out.println();
         System.out.println();
+
+        try
+        {
+            FileOutputStream fos =
+                    new FileOutputStream("/Users/JamesGlass/hashmap.ser");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(postingList);
+            oos.close();
+            fos.close();
+            System.out.printf("Serialized HashMap data is saved in hashmap.ser");
+        }catch(IOException ioe)
+        {
+            ioe.printStackTrace();
+        }
     }
 
 
@@ -151,7 +163,7 @@ public class SearchEngine {
             //This token will look like "Lorca</title>" so we add only the relevant part to title
             int last = documents.size()-1;
             documents.get(last).setTitle(documents.get(last).getTitle()
-                                            + word.replace("</title", ""));
+                    + word.replace("</title", ""));
             isTitle = false;
         }
         else if(word.startsWith("<article")) {
@@ -218,6 +230,10 @@ public class SearchEngine {
                 value.put(id, value.get(id)+1);
             }
         }
+
+
+
+
     }
 
 
