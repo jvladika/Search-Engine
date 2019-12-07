@@ -14,11 +14,12 @@ public class Scoring {
         double sum = 0.0;
         for(String term : query){
             double idf = 1; //= scoreIdf(term);
+            if(SearchEngine.postingList.get(term).get(doc) != null){
             int termFreq = SearchEngine.postingList.get(term).get(doc);
             double denominator = termFreq * (k1 + 1);
             double numerator = termFreq + k1 * (1 - b + b * avgdl);
 
-            sum += idf * denominator/numerator;
+            sum += idf * denominator/numerator;}
         }
 
         //return sum;

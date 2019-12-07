@@ -35,6 +35,7 @@ public class SearchEngine {
 
 
     public static void main(String[] args) throws IOException {
+       indexData();
         run();
     }
 
@@ -63,7 +64,7 @@ public class SearchEngine {
 
         Map<Document, Double> scores = new HashMap<>();
         for(Document doc : documents){
-            double score = Scoring.scoreBM25(doc, stemmedQuery);
+            double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
             scores.put(doc, score);
         }
 
@@ -85,26 +86,32 @@ public class SearchEngine {
         int start = doc.getStartByte();
         int end = doc.getEndByte();
 
-        RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+        RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/dev-set/"
                 + Integer.toString(xml) + ".xml", "r");
         FileChannel inChannel = aFile.getChannel();
         MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
         buffer.load();
 
-        byte[] bytes = new byte[600];
+        byte[] bytes = new byte[2000];
 
-        for(int j = 0; j < doc.getStartByte(); j++){
-            buffer.get();
+        for(int j = 0; j < 4; j++){ /*TODO: this needs to point at the start position!*/
+             buffer.get();
         }
 
         int size = 0;
-        for (int i = 0; i < 599; i++) {
-            byte b = buffer.get();
+        byte b;
+        for (int i = 0; i < 800; i++) { /*this okay*/
+             b = buffer.get();
             bytes[i] = b;
         }
 
         String s = new String(bytes, StandardCharsets.UTF_8);
-        System.out.println(s);
+        String [] sn = s.split("<");
+        for(int i=0; i< sn.length; i++ ){
+       if(sn[i].startsWith("title>")) System.out.println("TITLE:    " +sn[i].substring(6));
+       if(sn[i].startsWith("bdy>")) System.out.println("PREVIEW:    " +sn[i].substring(4,30));
+        }
+
     }
 
     public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
@@ -130,22 +137,22 @@ public class SearchEngine {
         It seemed to work okay for dev set...
          */
 
-        int iteration = 0;
-        OuterWhile: while(true) {
+       // int iteration = 0;
+      //  OuterWhile: while(true) {
             postingList = new HashMap<>();
 
-            for (int xmlId = iteration * 100 + 1; xmlId <= (iteration + 1) * 100; xmlId++) {
+            for (int xmlId =  1; xmlId <= 30 ; xmlId++) {
 
 
                 if (xmlId == 554) {
-                    break OuterWhile;
+                    //break OuterWhile;
                 }
                 System.out.println(xmlId);
 
                 /* Gets a reference to the file, READ_ONLY */
                 //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
                 //Change that to your own when you pull.
-                RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+                RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
                         + Integer.toString(xmlId) + ".xml", "r");
                 FileChannel inChannel = aFile.getChannel();
                 MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
@@ -173,11 +180,13 @@ public class SearchEngine {
                         if (currentWordStart < i) {
 
                             //increment count of words;
-                            Document last1 = documents.get(documents.size() - 1);
-                            last1.setNumWords(last1.getNumWords()+1);
-
+                            if(documents.size() != 0) {
+                                Document last1 = documents.get(documents.size() - 1);
+                                last1.setNumWords(last1.getNumWords() + 1);
+                            }
                             String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
                             //System.out.printf("%s ", s);
+                            wordProcessor(s);
                             size = 0;
                             Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
 
@@ -208,12 +217,12 @@ public class SearchEngine {
 
             }
 
-            serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
+       //     serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
 
-            iteration++;
-        }
+        //    iteration++;
+      //  }
 
-        serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
+     //   serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
 
         /*
         If you want to see how does the posting list look at the end:
