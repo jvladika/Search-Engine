@@ -65,7 +65,8 @@ public class SearchEngine {
 
         Map<Document, Double> scores = new HashMap<>();
         for(Document doc : documents){
-            double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
+           // double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
+            double score = IDF.TF_IDF2(doc, stemmedQuery);
             scores.put(doc, score);
         }
 
@@ -91,12 +92,13 @@ public class SearchEngine {
         FileInputStream fis = new FileInputStream("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
                 + Integer.toString(xml) + ".xml");
 
-        byte[] bytes = new byte[2000];
-        fis.read(bytes, start, 800);
+        byte[] bytes = new byte[1000];
+        fis.getChannel().position(start);
+        fis.read(bytes, 0, 800);
 
 
-        System.out.println("TITLE:    " +title);
-        System.out.println(new String(bytes, StandardCharsets.UTF_8));
+        System.out.println("\033[0;1m" +"TITLE:    " + title.replace(title.substring(title.length()-1), ""));
+        System.out.println(("\033[0m" +new String(bytes, StandardCharsets.UTF_8).replace("\n"," ")));
 
     }
 
