@@ -34,6 +34,8 @@ public class SearchEngine {
 
     public static List<Document> documents = new ArrayList<>();
 
+    public static double avgDocLen = 0.0;
+
 
     public static void main(String[] args) throws IOException {
        indexData();
@@ -89,7 +91,7 @@ public class SearchEngine {
         int end = doc.getEndByte();
         String title = doc.getTitle();
 
-        FileInputStream fis = new FileInputStream("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
+        FileInputStream fis = new FileInputStream("E:/FAKS/gir-wiki-subset/evaluation-set/"
                 + Integer.toString(xml) + ".xml");
 
         byte[] bytes = new byte[1000];
@@ -277,12 +279,15 @@ public class SearchEngine {
 
         //Check if word is a stop word or empty.
         else if(isBody) {
+            /*
             word = normalize(word);
 
             if(word.isEmpty()) return;
             if(stopWords.contains(word)) return;
 
             addToIndex(word);
+
+             */
         }
 
         else if(isTitle){
@@ -337,7 +342,7 @@ public class SearchEngine {
     }
 
     public static double avgDl() {
-        return 0;
+        return avgDocLen;
     }
 
 
