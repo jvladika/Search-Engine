@@ -44,6 +44,22 @@ public class SearchEngine {
         run();
     }
 
+    private static void prepare() {
+        try (FileInputStream fis = new FileInputStream("documents.ser");
+             ObjectInputStream ois = new ObjectInputStream(fis);) {
+
+            documents = (List<Document>) ois.readObject();
+
+        } catch(Exception ignorable){
+        }
+
+        avgDocLen = (double) documents.stream()
+                .map(Document::getNumWords)
+                .reduce(0, Integer::sum)
+                / documents.size();
+
+    }
+
     private static void run() throws IOException {
         Scanner sc = new Scanner(System.in);
 
