@@ -65,8 +65,8 @@ public class SearchEngine {
 
         Map<Document, Double> scores = new HashMap<>();
         for(Document doc : documents){
-           // double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
-            double score = IDF.TF_IDF2(doc, stemmedQuery);
+           double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
+            //double score = IDF.TF_IDF2(doc, stemmedQuery);
             scores.put(doc, score);
         }
 
@@ -97,7 +97,7 @@ public class SearchEngine {
         fis.read(bytes, 0, 800);
 
 
-        System.out.println("\033[0;1m" +"TITLE:    " + title.replace(title.substring(title.length()-1), ""));
+        System.out.println("\033[0;1m" +"TITLE:    " + title.replace(title.substring(title.length()), ""));
         System.out.println(("\033[0m" +new String(bytes, StandardCharsets.UTF_8).replace("\n"," ")));
 
     }
