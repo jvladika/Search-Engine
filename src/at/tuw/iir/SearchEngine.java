@@ -1,5 +1,6 @@
 package at.tuw.iir;
 
+
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -74,7 +75,7 @@ public class SearchEngine {
             if(it == 10) break;
 
             Document doc = entry.getKey();
-            System.out.println(doc.getId() + " " + doc.getTitle());
+         //  System.out.println(doc.getId() + " " + doc.getTitle());
             printDoc(doc);
 
             it++;
@@ -85,38 +86,23 @@ public class SearchEngine {
         int xml = doc.getXmlNumber();
         int start = doc.getStartByte();
         int end = doc.getEndByte();
+        String title = doc.getTitle();
 
-        RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/dev-set/"
-                + Integer.toString(xml) + ".xml", "r");
-        FileChannel inChannel = aFile.getChannel();
-        MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-        buffer.load();
+        FileInputStream fis = new FileInputStream("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
+                + Integer.toString(xml) + ".xml");
 
         byte[] bytes = new byte[2000];
+        fis.read(bytes, start, 800);
 
-        for(int j = 0; j < 4; j++){ /*TODO: this needs to point at the start position!*/
-             buffer.get();
-        }
 
-        int size = 0;
-        byte b;
-        for (int i = 0; i < 800; i++) { /*this okay*/
-             b = buffer.get();
-            bytes[i] = b;
-        }
-
-        String s = new String(bytes, StandardCharsets.UTF_8);
-        String [] sn = s.split("<");
-        for(int i=0; i< sn.length; i++ ){
-       if(sn[i].startsWith("title>")) System.out.println("TITLE:    " +sn[i].substring(6));
-       if(sn[i].startsWith("bdy>")) System.out.println("PREVIEW:    " +sn[i].substring(4,30));
-        }
+        System.out.println("TITLE:    " +title);
+        System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
     }
 
     public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
         List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
-        list.sort(Map.Entry.comparingByValue());
+        list.sort(Map.Entry.<K,V>comparingByValue().reversed());
 
         Map<K, V> result = new LinkedHashMap<>();
         for (Map.Entry<K, V> entry : list) {

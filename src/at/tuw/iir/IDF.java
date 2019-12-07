@@ -14,8 +14,9 @@ public class IDF {
 
     /*TF: Term Frequency, which measures how frequently a term occurs in a document.*/
             /*raw count*/
-            if(SearchEngine.postingList.get(term).get(doc) != null) { /*TODO: never goes inside*/
-                termFreq = SearchEngine.postingList.get(term).get(doc);
+            if(SearchEngine.postingList.get(term) == null) return sum;
+            if(SearchEngine.postingList.get(term).get(doc.getId()) != null) { /*TODO: never goes inside*/
+                termFreq = SearchEngine.postingList.get(term).get(doc.getId());
 
             /*IDF: Inverse Document Frequency, which measures how important a term is.
      However it is known that certain terms, such as "is", "of", and "that"may appear a lot of times but have little importance.
@@ -26,7 +27,7 @@ public class IDF {
             }
 
         }
-        if(sum!=0) System.out.print(sum);
+       // if(sum!=0) System.out.print(sum);
         return sum;
     }
 }
