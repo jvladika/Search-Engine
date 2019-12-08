@@ -41,7 +41,8 @@ public class SearchEngine {
 
 
     public static void main(String[] args) throws IOException {
-        ////indexData();
+        //indexData();
+        //createEfficietnPostingList();
         prepare();
         run();
     }
@@ -53,6 +54,7 @@ public class SearchEngine {
             documents = (List<Document>) ois.readObject();
 
         } catch(Exception ignorable){
+            ignorable.printStackTrace();
         }
 
         avgDocLen = (double) documents.stream()
@@ -105,9 +107,9 @@ public class SearchEngine {
         for(Long docId : docIds){
             //double score = IDF.TF_IDF(docId, stemmedQuery); /*IDF calculation*/
 
-            double score = IDF.TF_IDF2(docId, stemmedQuery, wordSums);
+            //double score = IDF.TF_IDF2(docId, stemmedQuery, wordSums);
 
-            //double score = Scoring.scoreBM25(doc, stemmedQuery);
+            double score = Scoring.scoreBM25(docId, stemmedQuery);
 
             if(score > 1E-6){
                 scores.put(docId, score);
@@ -137,7 +139,7 @@ public class SearchEngine {
 
         for(int i = 1; i <=6; i++){
 
-            try(BufferedReader br = Files.newBufferedReader(Paths.get("index/inverted_index" + Integer.toString(i) + ".txt"))){
+            try(BufferedReader br = Files.newBufferedReader(Paths.get("index/inverted_index_Mod" + Integer.toString(i) + ".txt"))){
 
                 String line = br.readLine();
                 while(line != null){
@@ -190,7 +192,7 @@ public class SearchEngine {
         int end = doc.getEndByte();
         String title = doc.getTitle();
 
-        FileInputStream fis = new FileInputStream("E:/FAKS/gir-wiki-subset/evaluation-set/"
+        FileInputStream fis = new FileInputStream("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
                 + Integer.toString(xml) + ".xml");
 
         byte[] bytes = new byte[1000];
@@ -241,7 +243,7 @@ public class SearchEngine {
             /* Gets a reference to the file, READ_ONLY */
             //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
             //Change that to your own when you pull.
-            RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+            RandomAccessFile aFile = new RandomAccessFile("Users/JamesGlass/gir-wiki-subset/evaluation-set/"
                     + Integer.toString(xmlId) + ".xml", "r");
             FileChannel inChannel = aFile.getChannel();
             MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
@@ -485,5 +487,59 @@ private static Tag checkType (String word) {
 	}
 	}
 	*/
+
+
+    private static Map<String, LinkedHashMap<Long, Integer>> createEfficietnPostingList() {
+        HashMap<String, LinkedHashMap<Long, Integer>> map = new HashMap<>();
+
+        for (int i = 1; i <= 6; i++) {
+
+            try (BufferedReader br = Files.newBufferedReader(Paths.get("index/inverted_index" + Integer.toString(i) + ".txt"))) {
+                BufferedWriter wr = Files.newBufferedWriter(Paths.get("index/inverted_index_Mod" + Integer.toString(i) + ".txt"));
+                String line = br.readLine();
+                while (line != null) {
+                    //get the line such as "cold: 432490,2 853498,3" and split to "cold" and "432490,2 853498,3"
+                    String[] args1 = line.trim().split(":");
+                    String term = args1[0];
+
+
+                    if (SearchEngine.stopWords.contains(term)) {
+                        line = br.readLine();
+                        continue;
+                    }
+
+                    if (term.length() > 18) {
+                        /*all notmalized words typically shorter than 18, unless cientific*/
+                        line = br.readLine();
+                        continue;
+                    }
+
+                    if (CheckForNum(term)) {
+                        /*char followed by a number will be eliminated*/
+                        line = br.readLine();
+                        continue;
+                    }
+
+                    wr.write(line);
+                    wr.newLine();
+                    line = br.readLine();
+                }
+
+            }
+             catch (IOException ex) {
+    }
+    }
+        return map;
+    }
+
+    public static boolean CheckForNum(String s) {
+        String n = ".*[0-9].*";
+        String c = ".*[a-z].*";
+        return s.matches(n) && s.matches(c);
+    }
+
+
+
+
 
 }
