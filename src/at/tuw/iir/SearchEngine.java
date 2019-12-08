@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SearchEngine {
 
@@ -64,6 +65,7 @@ public class SearchEngine {
         Scanner sc = new Scanner(System.in);
 
         while(true){
+            System.out.println();
             System.out.print("Write your query: ");
             while(!sc.hasNext()){
             }
@@ -83,16 +85,37 @@ public class SearchEngine {
             stemmedQuery.add(normalize(term));
         }
 
-        Map<Document, Double> scores = new HashMap<>();
-        for(Document doc : documents){
-           double score = IDF.TF_IDF(doc, stemmedQuery); /*IDF calculation*/
-            //double score = IDF.TF_IDF2(doc, stemmedQuery);
-            scores.put(doc, score);
+        postingList = new HashMap<>();
+        postingList = createPostingList(stemmedQuery);
+
+        Map<Long, Double> scores = new HashMap<>();
+
+        Set<Long> docIds = new HashSet<>();
+        docIds = postingList.values().stream().flatMap(v -> v.keySet().stream()).collect(Collectors.toSet());
+
+        Map<String, Integer> wordSums = new HashMap<>();
+        for(String term : stemmedQuery) {
+            Map<Long, Integer> freqs = postingList.get(term);
+            if(freqs != null) {
+                wordSums.put(term, freqs.values().stream().reduce(0, (a, b) -> a + b));
+            }
+        }
+
+        for(Long docId : docIds){
+            //double score = IDF.TF_IDF(docId, stemmedQuery); /*IDF calculation*/
+
+            double score = IDF.TF_IDF2(docId, stemmedQuery, wordSums);
+
+            //double score = Scoring.scoreBM25(doc, stemmedQuery);
+
+            if(score > 1E-6){
+                scores.put(docId, score);
+            }
         }
 
         scores = sortByValue(scores);
         int it = 0;
-        for(Map.Entry<Document, Double> entry : scores.entrySet()){
+        for(Map.Entry<Long, Double> entry : scores.entrySet()){
             if(it == 10) break;
 
             Document doc = entry.getKey();
@@ -100,6 +123,9 @@ public class SearchEngine {
             printDoc(doc);
 
             it++;
+        }
+        if(scores.entrySet().size() == 0){
+            System.out.println("No articles match your query. Please try again.");
         }
     }
 
