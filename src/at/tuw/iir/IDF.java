@@ -36,7 +36,7 @@ public class IDF {
     public static double TF_IDF2 (long docId, Set<String> query, Map<String, Integer> wordSums) {
 
         int termFreq = 0;
-        double sum = 0;
+        double sum = 0.0;
         double IDF;
 
         for (String term : query) {
