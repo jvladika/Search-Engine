@@ -41,7 +41,8 @@ public class SearchEngine {
 
 
     public static void main(String[] args) throws IOException {
-       indexData();
+        ////indexData();
+        prepare();
         run();
     }
 
@@ -118,8 +119,10 @@ public class SearchEngine {
         for(Map.Entry<Long, Double> entry : scores.entrySet()){
             if(it == 10) break;
 
-            Document doc = entry.getKey();
-         //  System.out.println(doc.getId() + " " + doc.getTitle());
+            long docId = entry.getKey();
+            //  System.out.println(doc.getId() + " " + doc.getTitle());
+
+            Document doc = documents.stream().filter(d -> d.getId() == docId).collect(Collectors.toList()).get(0);
             printDoc(doc);
 
             it++;
@@ -127,6 +130,58 @@ public class SearchEngine {
         if(scores.entrySet().size() == 0){
             System.out.println("No articles match your query. Please try again.");
         }
+    }
+
+    private static Map<String, LinkedHashMap<Long, Integer>> createPostingList(Set<String> stemmedQuery) {
+        HashMap<String, LinkedHashMap<Long,Integer>> map = new HashMap<>();
+
+        for(int i = 1; i <=6; i++){
+
+            try(BufferedReader br = Files.newBufferedReader(Paths.get("index/inverted_index" + Integer.toString(i) + ".txt"))){
+
+                String line = br.readLine();
+                while(line != null){
+                    //get the line such as "cold: 432490,2 853498,3" and split to "cold" and "432490,2 853498,3"
+                    String[] args1 = line.trim().split(":");
+                    String term = args1[0];
+
+                    if(SearchEngine.stopWords.contains(term)){
+                        line = br.readLine();
+                        continue;
+                    }
+
+                    if(stemmedQuery.contains(term)){
+                        //split line as "432490,2 853498,3" into "432490,2" and "853498,3"
+                        String[] args2 = args1[1].trim().split("\\s+");
+                        LinkedHashMap<Long, Integer> lhm = new LinkedHashMap<>();
+
+                        for(int j = 0; j < args2.length; j++){
+                            try {
+                                String[] args3 = args2[j].trim().split(",");
+                                lhm.put(Long.parseLong(args3[0]), Integer.parseInt(args3[1]));
+                            } catch(IndexOutOfBoundsException e){
+                                System.out.println(term);
+                            }
+                        }
+
+                        //put to posting list term frequencies for this term
+                        if(map.containsKey(term)){
+                            map.get(term).putAll(lhm);
+                        } else{
+                            map.put(term, lhm);
+                        }
+                    }
+
+                    line = br.readLine();
+                }
+
+            } catch(IOException ex){
+
+            }
+
+        }
+
+        return map;
     }
 
     private static void printDoc(Document doc) throws IOException {
@@ -171,28 +226,28 @@ public class SearchEngine {
         It seemed to work okay for dev set...
          */
 
-       // int iteration = 0;
-      //  OuterWhile: while(true) {
-            postingList = new HashMap<>();
+        // int iteration = 0;
+        //  OuterWhile: while(true) {
+        postingList = new HashMap<>();
 
-            for (int xmlId =  1; xmlId <= 30 ; xmlId++) {
+        for (int xmlId =  1; xmlId <= 553 ; xmlId++) {
 
 
-                if (xmlId == 554) {
-                    //break OuterWhile;
-                }
-                System.out.println(xmlId);
+            if (xmlId == 554) {
+                //break OuterWhile;
+            }
+            System.out.println(xmlId);
 
-                /* Gets a reference to the file, READ_ONLY */
-                //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
-                //Change that to your own when you pull.
-                RandomAccessFile aFile = new RandomAccessFile("/Users/JamesGlass/gir-wiki-subset/evaluation-set/"
-                        + Integer.toString(xmlId) + ".xml", "r");
-                FileChannel inChannel = aFile.getChannel();
-                MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-                buffer.load();
+            /* Gets a reference to the file, READ_ONLY */
+            //NOTE: I couldn't get IntelliJ to recognize resources with a relative path so I put my absolute path to XML's...
+            //Change that to your own when you pull.
+            RandomAccessFile aFile = new RandomAccessFile("E:/FAKS/gir-wiki-subset/evaluation-set/"
+                    + Integer.toString(xmlId) + ".xml", "r");
+            FileChannel inChannel = aFile.getChannel();
+            MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+            buffer.load();
 
-                /* Have two buffers, retrieve string and save bytes */
+            /* Have two buffers, retrieve string and save bytes */
 		/*
 		 * Splits articles Tokenize each, add number count Add Doc ID
 
@@ -205,58 +260,58 @@ public class SearchEngine {
          * Index the documents each word appears in
          * */
 
-                int size = 0;
-                for (int i = 0; i < buffer.limit(); i++) {
-                    byte b = buffer.get();
+            int size = 0;
+            for (int i = 0; i < buffer.limit(); i++) {
+                byte b = buffer.get();
 
-                    // New word found
-                    if (b == 32 || b == 10) {
-                        if (currentWordStart < i) {
+                // New word found
+                if (b == 32 || b == 10) {
+                    if (currentWordStart < i) {
 
-                            //increment count of words;
-                            if(documents.size() != 0) {
-                                Document last1 = documents.get(documents.size() - 1);
-                                last1.setNumWords(last1.getNumWords() + 1);
-                            }
-                            String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
-                            //System.out.printf("%s ", s);
-                            wordProcessor(s);
-                            size = 0;
-                            Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
-
-                            //wordProcessor(s);
-                            if (s.startsWith("<bdy>")) {
-                                Document last = documents.get(documents.size() - 1);
-                                last.setStartByte(i);
-                            } else if (s.endsWith("</bdy>")) {
-                                Document last = documents.get(documents.size() - 1);
-                                //subtract the length of the string "</bdy>" because it's not part of text
-                                last.setEndByte(i - size);
-                            }
+                        //increment count of words;
+                        if(documents.size() != 0 && isBody) {
+                            Document last1 = documents.get(documents.size() - 1);
+                            last1.setNumWords(last1.getNumWords() + 1);
                         }
-                    } else {
-                        byteBuffer[size++] = b;
-                    }
-                }
-                buffer.clear(); // do something with the data and clear/compact it.
-                inChannel.close();
-                aFile.close();
+                        String s = new String(Arrays.copyOfRange(byteBuffer, 0, size), StandardCharsets.UTF_8);
+                        //System.out.printf("%s ", s);
+                        wordProcessor(s);
+                        size = 0;
+                        Arrays.fill(byteBuffer, 0, byteBuffer.length, (byte) 0);
 
-                for (Document doc : documents) {
-                    if (doc.getXmlNumber() == 0) {
-                        doc.setXmlNumber(xmlId);
+                        //wordProcessor(s);
+                        if (s.startsWith("<bdy>")) {
+                            Document last = documents.get(documents.size() - 1);
+                            last.setStartByte(i);
+                        } else if (s.endsWith("</bdy>")) {
+                            Document last = documents.get(documents.size() - 1);
+                            //subtract the length of the string "</bdy>" because it's not part of text
+                            last.setEndByte(i - size);
+                        }
                     }
-                    doc.setDevSet(true);
+                } else {
+                    byteBuffer[size++] = b;
                 }
+            }
+            buffer.clear(); // do something with the data and clear/compact it.
+            inChannel.close();
+            aFile.close();
 
+            for (Document doc : documents) {
+                if (doc.getXmlNumber() == 0) {
+                    doc.setXmlNumber(xmlId);
+                }
+                doc.setDevSet(false);
             }
 
-       //     serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
+        }
+
+        //     serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
 
         //    iteration++;
-      //  }
+        //  }
 
-     //   serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
+        //   serialize("postinglist" + Integer.toString(iteration + 1) + ".ser");
 
         /*
         If you want to see how does the posting list look at the end:
@@ -266,6 +321,22 @@ public class SearchEngine {
         System.out.println();
         System.out.println();
         System.out.println();
+
+
+        /*
+        try {
+            FileOutputStream fos =
+                    new FileOutputStream("documents.ser");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(documents);
+            oos.close();
+            fos.close();
+            System.out.println("Serialized documents list is saved in documents.ser");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+
+         */
     }
 
     private static void serialize(String fileName){
@@ -303,6 +374,12 @@ public class SearchEngine {
             }
             currId++;
         }
+        else if(word.contains("<title>") && word.contains("</title>")){
+            int last = documents.size()-1;
+            documents.get(last).setTitle(word.replace("<title>", "")
+                    .replace("</title>", "")
+            );
+        }
         else if(word.startsWith("<title")) {
             isTitle = true;
             //This token will look like "<title>Federico" so we send the correct token to processing
@@ -312,7 +389,7 @@ public class SearchEngine {
             //This token will look like "Lorca</title>" so we add only the relevant part to title
             int last = documents.size()-1;
             documents.get(last).setTitle(documents.get(last).getTitle()
-                                            + word.replace("</title", ""));
+                    + word.replace("</title>", ""));
             isTitle = false;
         }
         else if(word.startsWith("<article")) {

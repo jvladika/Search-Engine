@@ -27,7 +27,7 @@ public class IDF {
             }
 
         }
-       // if(sum!=0) System.out.print(sum);
+        // if(sum!=0) System.out.print(sum);
         return sum;
     }
 
@@ -53,8 +53,8 @@ public class IDF {
     the text by dividing it by the total number of words inside the document.*/
             /*raw count*/
 
-            if(SearchEngine.postingList.get(term).get(doc.getId()) != null) {
-                 termFreq = (double) SearchEngine.postingList.get(term).get(doc.getId());
+            if(freqs.get(docId) != null) {
+                termFreq = freqs.get(docId);
 
             /*IDF: Inverse Document Frequency, which measures how important a term is.
      However it is known that certain terms, such as "is", "of", and "that"may appear a lot of times but have little importance.
