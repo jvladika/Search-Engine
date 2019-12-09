@@ -1,6 +1,8 @@
 package at.tuw.iir;
 
-public class Document {
+import java.io.Serializable;
+
+public class Document implements Serializable {
 
     private long id;
     private String title;
