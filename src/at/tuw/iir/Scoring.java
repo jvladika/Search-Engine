@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class Scoring {
 
-    public static double scoreBM25(Document doc, Set<String> query){
+    public static double scoreBM25(long doc, Set<String> query){
         double k1 = 1.5;
         double b = 0.75;
         int numDocuments = SearchEngine.documents.size();

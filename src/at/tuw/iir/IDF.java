@@ -60,8 +60,12 @@ public class IDF {
      However it is known that certain terms, such as "is", "of", and "that"may appear a lot of times but have little importance.
      Thus we need to weigh down the frequent terms while scale up the rare ones, by computing the following:
     IDF(t) = log_e(Total number of documents / Number of documents with term t in it).*/
-                IDF = Math.log((double)SearchEngine.documents.size() / freqs.size());
-                sum += (double) termFreq/wordSum * IDF;
+                IDF = Math.log((double)SearchEngine.documents.size() / (1+freqs.size())) + 1.0;
+
+                //double TF = (double) termFreq/wordSum;
+                double TF = 0.5 + 0.5 * termFreq/wordSum;
+
+                sum += TF * IDF;
             }
 
         }

@@ -37,22 +37,235 @@ public class SearchEngine {
 
     public static List<Document> documents = new ArrayList<>();
 
+    public static List<Topic> topics = new ArrayList<>();
+
     public static double avgDocLen = 0.0;
+
+    private static boolean useTfidf;
 
 
     public static void main(String[] args) throws IOException {
         ////indexData();
         prepare();
-        run();
+        //run();
+
+        evaluate();
     }
 
-    private static void prepare() {
+    private static void evaluate() {
+        /*
+        evaluateTfIdfTitle();
+        evaluateTfIdfDescription();
+        evaluateTfIdfNarrative();
+
+        evaluateBM25Title();
+        evaluateBM25Description();
+        evaluateBM25Narrative();
+
+         */
+
+
+        useTfidf = true;
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/tfidf_title_only2.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getTitle();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse 1");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+
+        /*
+
+        useTfidf = true;
+
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/tfidf_description_only.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getDescription();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse2");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+        useTfidf = true;
+
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/tfidf_narrative_only.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getNarrative();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse3");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+        useTfidf = false;
+
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/bm25_title_only.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getTitle();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse4");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+        useTfidf = false;
+
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/bm25_description_only.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getDescription();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse5");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+        useTfidf = false;
+
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get("retrieval_results/bm25_narrative_only.txt"))){
+
+            for(Topic topic : topics) {
+                String query = topic.getNarrative();
+                Map<Long, Double> scores = processQuery(query);
+
+                int rank = 1;
+                for(Map.Entry<Long, Double> entry : scores.entrySet()) {
+                    if(rank == 101) break;
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(topic.getTopicId());
+                    sb.append(" Q0 ");
+                    sb.append(Long.toString(entry.getKey()));
+                    sb.append(" ");
+                    sb.append(Integer.toString(rank++));
+                    sb.append(" ");
+                    sb.append(Double.toString(entry.getValue()));
+                    sb.append(" Schaffergasse6");
+
+                    bw.write(sb.toString());
+                    bw.newLine();
+                }
+            }
+
+        } catch(IOException ex){
+            ex.printStackTrace();
+        }
+
+         */
+
+    }
+
+
+    private static void prepare() throws IOException {
         try (FileInputStream fis = new FileInputStream("documents.ser");
              ObjectInputStream ois = new ObjectInputStream(fis);) {
 
             documents = (List<Document>) ois.readObject();
 
-        } catch(Exception ignorable){
+        } catch(Exception ex){
+            ex.printStackTrace();
         }
 
         avgDocLen = (double) documents.stream()
@@ -60,6 +273,7 @@ public class SearchEngine {
                 .reduce(0, Integer::sum)
                 / documents.size();
 
+        processTopics();
     }
 
     private static void run() throws IOException {
@@ -71,12 +285,62 @@ public class SearchEngine {
             while(!sc.hasNext()){
             }
             String line = sc.nextLine();
-            processQuery(line);
+            Map<Long,Double> scores = processQuery(line);
+            printDocs(scores);
         }
 
     }
 
-    private static void processQuery(String line) throws IOException {
+    private static void printDocs(Map<Long, Double> scores) throws IOException {
+        int it = 0;
+        for(Map.Entry<Long, Double> entry : scores.entrySet()){
+            if(it == 10) break;
+
+            long docId = entry.getKey();
+            //  System.out.println(doc.getId() + " " + doc.getTitle());
+
+            Document doc = documents.stream().filter(d -> d.getId() == docId).collect(Collectors.toList()).get(0);
+            printDoc(doc);
+
+            it++;
+        }
+        if(scores.entrySet().size() == 0){
+            System.out.println("No articles match your query. Please try again.");
+        }
+    }
+
+    private static void processTopics() throws IOException {
+        BufferedReader br = Files.newBufferedReader(Paths.get("2010-topics.xml"));
+
+        Topic topic = new Topic();
+
+        String line = br.readLine();
+        while(line != null){
+            if(line.contains("<topic")){
+                topic = new Topic();
+
+                String[] args = line.split("\\s+");
+                String id = args[1].replace("\"", "").replace("id", "").replace("=", "");
+                topic.setTopicId(Long.parseLong(id));
+            } else if(line.contains("<title")){
+                topic.setTitle(line.trim().replace("<title>", "").replace("</title>", ""));
+            } else if(line.contains("<phrasetitle")){
+                topic.setPhraseTitle(line.trim().replace("<phrasetitle>", "").replace("</phrasetitle>", ""));
+            } else if(line.contains("<description")){
+                topic.setDescription(line.trim().replace("<description>", "").replace("</description>", ""));
+            } else if(line.contains("<narrative")){
+                topic.setNarrative(line.trim().replace("<narrative>", "").replace("</narrative>", ""));
+            } else if(line.contains("</topic>")){
+                topics.add(topic);
+            }
+
+            line = br.readLine();
+        }
+
+        System.out.println(topics);
+    }
+
+    private static Map<Long, Double> processQuery(String line) throws IOException {
         String[] args = line.split(" ");
         Set<String> query = new HashSet<>(Arrays.asList(args));
         System.out.println(query);
@@ -98,38 +362,27 @@ public class SearchEngine {
         for(String term : stemmedQuery) {
             Map<Long, Integer> freqs = postingList.get(term);
             if(freqs != null) {
-                wordSums.put(term, freqs.values().stream().reduce(0, (a, b) -> a + b));
+                //wordSums.put(term, freqs.values().stream().reduce(0, (a, b) -> a + b));
+                wordSums.put(term, freqs.values().stream().max(Integer::compare).get());
             }
         }
 
         for(Long docId : docIds){
             //double score = IDF.TF_IDF(docId, stemmedQuery); /*IDF calculation*/
 
-            double score = IDF.TF_IDF2(docId, stemmedQuery, wordSums);
-
-            //double score = Scoring.scoreBM25(doc, stemmedQuery);
-
+            double score;
+            if(useTfidf) {
+                score = IDF.TF_IDF2(docId, stemmedQuery, wordSums);
+            } else {
+                score = Scoring.scoreBM25(docId, stemmedQuery);
+            }
             if(score > 1E-6){
                 scores.put(docId, score);
             }
         }
 
         scores = sortByValue(scores);
-        int it = 0;
-        for(Map.Entry<Long, Double> entry : scores.entrySet()){
-            if(it == 10) break;
-
-            long docId = entry.getKey();
-            //  System.out.println(doc.getId() + " " + doc.getTitle());
-
-            Document doc = documents.stream().filter(d -> d.getId() == docId).collect(Collectors.toList()).get(0);
-            printDoc(doc);
-
-            it++;
-        }
-        if(scores.entrySet().size() == 0){
-            System.out.println("No articles match your query. Please try again.");
-        }
+        return scores;
     }
 
     private static Map<String, LinkedHashMap<Long, Integer>> createPostingList(Set<String> stemmedQuery) {

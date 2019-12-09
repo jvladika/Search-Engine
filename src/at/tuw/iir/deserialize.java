@@ -39,6 +39,12 @@ public class deserialize {
                 for(Map.Entry<String, Map<Long, Integer>> entry : map.entrySet()){
                     String word = entry.getKey();
 
+                    if((word.length() > 18) ||
+                            (word.matches(".*[0-9].*") && word.matches(".*[a-zA-Z].*")))
+                    {
+                        continue;
+                    }
+
                     StringBuilder sb = new StringBuilder();
                     sb.append(word);
                     sb.append(": ");
